@@ -132,7 +132,10 @@ class DRIVEDataset(Dataset):
                 "_test", ""
             )
 
-            fov_path = self.fov_dir / f"{image_id}_{self.split}_mask.gif"
+            # DRIVE names training FOV masks with "_training_mask",
+            # not "_train_mask". Test masks use "_test_mask".
+            fov_suffix = "training" if self.split == "train" else "test"
+            fov_path = self.fov_dir / f"{image_id}_{fov_suffix}_mask.gif"
 
             if not fov_path.is_file():
                 raise FileNotFoundError(
@@ -209,7 +212,8 @@ class DRIVEDataset(Dataset):
             label = np.flip(label, axis=0)
             fov = np.flip(fov, axis=0)
 
-        # Random rotation by 90-180 degree increments
+        # Use 0 or 180 degrees so every sample keeps the original
+        # (584, 565) spatial dimensions for batching.
         k = random.choice([0, 2])
 
         image = np.rot90(image, k=k, axes=(1, 2))
