@@ -95,13 +95,13 @@ class DRIVEDataset(Dataset):
                 f"FOV mask directory not found: {self.fov_dir}"
             )
 
-        if self.split == "train":
-            self.label_dir = self.split_dir / "1st_manual"
+        # Both DRIVE training and test splits have manual vessel annotations.
+        self.label_dir = self.split_dir / "1st_manual"
 
-            if not self.label_dir.is_dir():
-                raise FileNotFoundError(
-                    f"Annotation directory not found: {self.label_dir}"
-                )
+        if not self.label_dir.is_dir():
+            raise FileNotFoundError(
+                f"Annotation directory not found: {self.label_dir}"
+            )
 
         self.samples = self._collect_samples()
 
@@ -148,16 +148,15 @@ class DRIVEDataset(Dataset):
                 "id": image_id
             }
 
-            if self.split == "train":
+            # Load the manual vessel annotation for both train and test.
+            label_path = self.label_dir / f"{image_id}_manual1.gif"
 
-                label_path = self.label_dir / f"{image_id}_manual1.gif"
+            if not label_path.is_file():
+                raise FileNotFoundError(
+                    f"Missing vessel annotation: {label_path}"
+                )
 
-                if not label_path.is_file():
-                    raise FileNotFoundError(
-                        f"Missing vessel annotation: {label_path}"
-                    )
-
-                sample["label"] = label_path
+            sample["label"] = label_path
 
             samples.append(sample)
 
@@ -234,13 +233,13 @@ class DRIVEDataset(Dataset):
 
         label = None
 
-        if self.split == "train":
-            label = self._load_grayscale(sample["label"])
+        # Test annotations are required for official DRIVE test evaluation too.
+        label = self._load_grayscale(sample["label"])
 
-            if label.shape != fov.shape:
-                raise ValueError(
-                    f"Label/FOV shape mismatch: {sample['id']}"
-                )
+        if label.shape != fov.shape:
+            raise ValueError(
+                f"Label/FOV shape mismatch: {sample['id']}"
+            )
 
         if image.shape[1:] != fov.shape:
             raise ValueError(
